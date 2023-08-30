@@ -15,6 +15,7 @@ import {AuthTicket, Connection, GlucoseItem} from "./interfaces/librelink/common
 import {getUtcDateFromString, mapTrendArrow} from "./helpers/helpers";
 import {LibreLinkUpHttpHeaders, NightScoutHttpHeaders} from "./interfaces/http-headers";
 import {Entry} from "./interfaces/nightscout/entry";
+import {Treatment} from "./interfaces/nightscout/treatment";
 
 const {combine, timestamp, printf} = format;
 
@@ -95,6 +96,11 @@ function getNightscoutUrl(): string
  * last known authTicket
  */
 let authTicket: AuthTicket = {duration: 0, expires: 0, token: ""};
+
+/**
+ * last transmitter ID
+ */
+let transmitterId: string = "";
 
 const libreLinkUpHttpHeaders: LibreLinkUpHttpHeaders = {
     "User-Agent": USER_AGENT,
@@ -329,16 +335,45 @@ export async function createFormattedMeasurements(measurementData: GraphData): P
     return formattedMeasurements;
 }
 
+
+export async function createFormattedTreatments(measurementData: GraphData): Promise<Entry[]>
+{
+    const formattedTreatments: Treatment[] = [];
+    const sensor = measurementData.connection.sensor;
+
+    if (sensor.sn != transmitterId)
+    {
+        formattedTreatments.push({
+            "eventType": "Sensor Start",
+            "enteredBy": NIGHTSCOUT_DEVICE_NAME,
+            "created_at": new Date(sensor.a*1000).toISOString(),
+            "transmitterId": sensor.sn
+        });
+	updateTransmitterId(sensor.sn);
+    }
+
+    return formattedTreatments;
+}
+
+
 async function uploadToNightScout(measurementData: GraphData): Promise<void>
 {
     const formattedMeasurements: Entry[] = await createFormattedMeasurements(measurementData);
+    const entriesUrl = getNightscoutUrl() + "/api/v1/entries"
+    await uploadToNightScoutFormatted(formattedMeasurements, entriesUrl);
 
+    const formattedTreatments: Treatment[] = await createFormattedTreatments(measurementData);
+    const treatmentsUrl = getNightscoutUrl() + "/api/v1/treatments"
+    await uploadToNightScoutFormatted(formattedTreatments, treatmentsUrl);
+}
+
+async function uploadToNightScoutFormatted(formattedMeasurements: Array<Entry | Treatment>, url: string): Promise<void>
+{
     if (formattedMeasurements.length > 0)
     {
         logger.info("Trying to upload " + formattedMeasurements.length + " glucose measurement items to Nightscout");
         try
         {
-            const url = getNightscoutUrl() + "/api/v1/entries"
             const response = await axios.post(
                 url,
                 formattedMeasurements,
@@ -423,4 +458,9 @@ function hasValidAuthentication(): boolean
     logger.info("no authTicket.expires");
 
     return false;
+}
+
+function updateTransmitterId(newTransmitterId: string): void
+{
+    transmitterId = newTransmitterId;
 }
