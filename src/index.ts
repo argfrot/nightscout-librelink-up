@@ -306,7 +306,8 @@ export async function createFormattedMeasurements(measurementData: GraphData): P
             "dateString": measurementDate.toISOString(),
             "date": measurementDate.getTime(),
             "direction": mapTrendArrow(glucoseMeasurement.TrendArrow),
-            "sgv": glucoseMeasurement.ValueInMgPerDl
+            "sgv": glucoseMeasurement.ValueInMgPerDl,
+            "noise": 1,
         });
     }
 
@@ -320,7 +321,8 @@ export async function createFormattedMeasurements(measurementData: GraphData): P
                 "device": NIGHTSCOUT_DEVICE_NAME,
                 "dateString": entryDate.toISOString(),
                 "date": entryDate.getTime(),
-                "sgv": glucoseMeasurementHistoryEntry.ValueInMgPerDl
+                "sgv": glucoseMeasurementHistoryEntry.ValueInMgPerDl,
+                "noise": 1,
             });
         }
     });

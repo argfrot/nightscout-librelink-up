@@ -11,4 +11,5 @@ export interface Entry
     direction?: string;
     sgv: number;
     device: string;
+    noise: number;
 }
