@@ -18,9 +18,9 @@ import {Entry} from "./interfaces/nightscout/entry";
 
 const {combine, timestamp, printf} = format;
 
-const logFormat = printf(({level, message}) =>
+const logFormat = printf(({timestamp, level, message}) =>
 {
-    return `[${level}]: ${message}`;
+    return `${timestamp} [${level}]: ${message}`;
 });
 
 const logger = createLogger({
